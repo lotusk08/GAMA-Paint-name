@@ -344,7 +344,7 @@ export default function App() {
       // Tier filter
       if (selectedTier !== 'all') {
         const tierObj = paintTiers.find(t => t.id === selectedTier);
-        if (tierObj && item.tier !== tierObj.value) return false;
+        if (tierObj && item.tier !== tierObj.name) return false;
       }
 
       // Search query filter (ignore case, match name or reason)

@@ -1,6 +1,6 @@
 {
   "name": "GAMA Paint Name Explorer",
-  "description": "Ứng dụng phân loại, lọc, bình chọn và xuất danh sách kết quả bầu chọn tên thương hiệu sơn GAMA theo cấu trúc Tên - Lý do chuyên nghiệp.",
+  "description": "Công cụ phân loại, lọc, bình chọn và xuất danh sách kết quả bầu chọn tên thương hiệu sơn GAMA.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

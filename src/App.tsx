@@ -54,7 +54,7 @@ interface VoteHistory {
 export default function App() {
   // Initialize state with default votes if not already in localStorage
   const [suggestions, setSuggestions] = useState<VotedSuggestion[]>(() => {
-    const saved = localStorage.getItem('gama_suggestions_voted_v3');
+    const saved = localStorage.getItem('gama_suggestions_voted_v5');
     
     // Helper to clean up any duplicates and respect category-tier constraints
     const cleanList = (list: any[]): VotedSuggestion[] => {
@@ -104,7 +104,7 @@ export default function App() {
 
   // Keep track of which brand IDs the current session has voted for
   const [myVotedIds, setMyVotedIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('gama_my_voted_ids_v3');
+    const saved = localStorage.getItem('gama_my_voted_ids_v5');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -125,7 +125,7 @@ export default function App() {
 
   // Voting history
   const [voteHistory, setVoteHistory] = useState<VoteHistory[]>(() => {
-    const saved = localStorage.getItem('gama_vote_history_v3');
+    const saved = localStorage.getItem('gama_vote_history_v5');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -169,15 +169,15 @@ export default function App() {
 
   // Save changes to localStorage
   useEffect(() => {
-    localStorage.setItem('gama_suggestions_voted_v3', JSON.stringify(suggestions));
+    localStorage.setItem('gama_suggestions_voted_v5', JSON.stringify(suggestions));
   }, [suggestions]);
 
   useEffect(() => {
-    localStorage.setItem('gama_my_voted_ids_v3', JSON.stringify(myVotedIds));
+    localStorage.setItem('gama_my_voted_ids_v5', JSON.stringify(myVotedIds));
   }, [myVotedIds]);
 
   useEffect(() => {
-    localStorage.setItem('gama_vote_history_v3', JSON.stringify(voteHistory));
+    localStorage.setItem('gama_vote_history_v5', JSON.stringify(voteHistory));
   }, [voteHistory]);
 
   useEffect(() => {
@@ -228,7 +228,7 @@ export default function App() {
       setMyVotedIds(prev => [...prev, id]);
       
       const newHistoryEntry: VoteHistory = {
-        id: `vote_${Date.now()}`,
+        id: `vote_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         voterName: voterName,
         brandId: id,
         brandName: name,
@@ -298,7 +298,7 @@ export default function App() {
 
   // Top brands grouped by category and tier (segment)
   const topVotedByGroup = useMemo(() => {
-    const categoriesList = ['Nội thất', 'Ngoại thất', 'Chống thấm', 'Bột trét/Matit', 'Sơn trang trí'];
+    const categoriesList = ['Sơn nội thất', 'Sơn ngoại thất', 'Sơn chống thấm', 'Bột trét', 'Sơn trang trí'];
     const result: { 
       category: string; 
       tiers: { tier: string; topItem: VotedSuggestion | null }[] 
@@ -306,9 +306,9 @@ export default function App() {
     
     categoriesList.forEach(cat => {
       let validTiers: string[] = [];
-      if (cat === 'Nội thất' || cat === 'Ngoại thất') {
+      if (cat === 'Sơn nội thất' || cat === 'Sơn ngoại thất') {
         validTiers = ['Cao cấp', 'Chiến lược', 'Cơ bản'];
-      } else if (cat === 'Bột trét/Matit') {
+      } else if (cat === 'Bột trét') {
         validTiers = ['Cao cấp', 'Chiến lược'];
       } else { // 'Chống thấm', 'Sơn trang trí'
         validTiers = ['Cao cấp'];
@@ -404,13 +404,13 @@ export default function App() {
   // Icon mapper for categories
   const getCategoryIcon = (category: string, size = 16) => {
     switch (category) {
-      case 'Nội thất':
+      case 'Sơn nội thất':
         return <Home size={size} className="text-indigo-600" />;
-      case 'Ngoại thất':
+      case 'Sơn ngoại thất':
         return <Shield size={size} className="text-emerald-600" />;
-      case 'Chống thấm':
+      case 'Sơn chống thấm':
         return <Shield size={size} className="text-cyan-600" />;
-      case 'Bột trét/Matit':
+      case 'Bột trét':
         return <Layers size={size} className="text-amber-600" />;
       case 'Sơn trang trí':
         return <Sparkles size={size} className="text-purple-600" />;
@@ -473,7 +473,7 @@ export default function App() {
             {isEditingVoter ? (
               <form onSubmit={handleSaveVoterName} className="space-y-3">
                 <p className="text-xs text-slate-500 leading-normal">
-                  Hãy nhập Họ tên hoặc kèm vị trí/Phòng ban để ghi nhận phiếu bầu chính xác:
+                  Tên người bình chọn kèm vị trí/Phòng ban để ghi nhận bình chọn hợp lệ:
                 </p>
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-2.5 text-slate-400" />
@@ -481,7 +481,7 @@ export default function App() {
                     type="text"
                     value={tempVoterName}
                     onChange={(e) => setTempVoterName(e.target.value)}
-                    placeholder="Ví dụ: Hoàng Thanh Thắng (P. Marketing)"
+                    placeholder="Ví dụ: Nguyễn Xuân Sơn - P. Marketing"
                     className="w-full pl-9 pr-3 py-2 bg-white border border-emerald-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent placeholder-slate-400"
                     required
                   />
@@ -701,7 +701,7 @@ export default function App() {
           <div className="bg-white rounded-2xl border border-emerald-100/60 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-3">
               <BarChart3 size={16} className="text-[#0C3E26]" />
-              <h2 className="font-serif font-bold text-[#0C3E26] text-sm">Tổng Thể Bầu Chọn</h2>
+              <h2 className="font-serif font-bold text-[#0C3E26] text-sm">Lượng bình chọn</h2>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mb-4">
@@ -719,16 +719,16 @@ export default function App() {
               <div>
                 <span className="text-[10px] text-slate-400 font-bold uppercase block mb-2.5 tracking-wider">Theo nhóm sản phẩm</span>
                 <div className="space-y-3">
-                  {['Nội thất', 'Ngoại thất', 'Chống thấm', 'Bột trét/Matit', 'Sơn trang trí'].map(cat => {
+                  {['Sơn nội thất', 'Sơn ngoại thất', 'Sơn chống thấm', 'Bột trét', 'Sơn trang trí'].map(cat => {
                     const votes = stats.categoryVotes[cat] || 0;
                     const count = stats.categoryCounts[cat] || 0;
                     const pct = stats.totalVotes > 0 ? Math.round((votes / stats.totalVotes) * 100) : 0;
                     
                     const progressColors: Record<string, string> = {
-                      'Nội thất': 'bg-emerald-600',
-                      'Ngoại thất': 'bg-[#0C3E26]',
-                      'Chống thấm': 'bg-blue-600',
-                      'Bột trét/Matit': 'bg-amber-600',
+                      'Sơn nội thất': 'bg-emerald-600',
+                      'Sơn ngoại thất': 'bg-[#0C3E26]',
+                      'Sơn chống thấm': 'bg-blue-600',
+                      'Bột trét': 'bg-amber-600',
                       'Sơn trang trí': 'bg-purple-600'
                     };
                     const barColor = progressColors[cat] || 'bg-[#0C3E26]';
@@ -864,10 +864,10 @@ export default function App() {
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="bg-white shadow-sm border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 >
-                  <option value="votes-desc">🔥 Số phiếu bầu nhiều nhất</option>
-                  <option value="votes-asc">👍 Số phiếu bầu ít nhất</option>
-                  <option value="alphabetical">🔤 Tên đề xuất A-Z</option>
-                  <option value="default">📂 Theo phân loại danh mục</option>
+                  <option value="votes-desc">Có nhiều phiếu nhất</option>
+                  <option value="votes-asc">Có ít phiếu nhất</option>
+                  <option value="alphabetical">Tên đề xuất A-Z</option>
+                  <option value="default">Theo phân loại</option>
                 </select>
               </div>
 
@@ -1219,7 +1219,7 @@ export default function App() {
                       className="bg-[#0C3E26] hover:bg-emerald-900 text-white font-medium text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors shadow"
                     >
                       <Download size={14} />
-                      Tải file .TXT kết quả
+                      Tải kết quả
                     </button>
                   </div>
                 </motion.div>
@@ -1233,7 +1233,7 @@ export default function App() {
 
       {/* FOOTER SECTION */}
       <footer className="max-w-7xl w-full mx-auto px-4 mt-16 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-        <p className="font-serif text-[#0C3E26] font-semibold text-sm mb-1">GAMA Paint Brand Book 2026</p>
+        <p className="font-serif text-[#0C3E26] font-semibold text-sm mb-1">GAMA SUN Brand Book 2026</p>
         <p className="font-light">GAMA Marketing Department</p>
       </footer>
 

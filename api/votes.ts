@@ -24,8 +24,17 @@ async function getVotesData(): Promise<VoteData> {
       return { suggestions: {}, voteHistory: [] };
     }
     
-    // blob is a Web Blob, need to read it as text
-    const text = await (blob as any).text();
+    // blob is a Web Blob, convert to string
+    let text: string;
+    if (typeof blob === 'string') {
+      text = blob;
+    } else if (blob instanceof Blob) {
+      text = await blob.text();
+    } else {
+      text = String(blob);
+    }
+    
+    console.log('[v0] Read blob text:', text.substring(0, 100));
     const data = JSON.parse(text) as VoteData;
     console.log('[v0] Loaded votes from blob:', Object.keys(data.suggestions).length, 'items');
     return data;

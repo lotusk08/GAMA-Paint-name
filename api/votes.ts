@@ -6,16 +6,17 @@ interface VoteData {
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
 }
 
-// Lazy initialize Redis client
+// Lazy initialize Redis client using REST API
 let redis: Redis | null = null;
 
 function getRedisClient(): Redis {
-  if (!redis && process.env.REDIS_URL) {
+  if (!redis) {
     redis = new Redis({
-      url: process.env.REDIS_URL
+      url: process.env.KV_REST_API_URL || '',
+      token: process.env.KV_REST_API_TOKEN || ''
     });
   }
-  return redis!;
+  return redis;
 }
 
 const VOTES_KEY = 'gama:votes:data';
@@ -23,8 +24,8 @@ const VOTE_HISTORY_KEY = 'gama:votes:history';
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    if (!process.env.REDIS_URL) {
-      console.log('[v0] No REDIS_URL set, returning empty data');
+    if (!process.env.KV_REST_API_URL) {
+      console.log('[v0] No KV_REST_API_URL set, returning empty data');
       return { suggestions: {}, voteHistory: [] };
     }
     
@@ -46,8 +47,8 @@ async function getVotesData(): Promise<VoteData> {
 
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
-    if (!process.env.REDIS_URL) {
-      console.log('[v0] No REDIS_URL set, skipping save');
+    if (!process.env.KV_REST_API_URL) {
+      console.log('[v0] No KV_REST_API_URL set, skipping save');
       return;
     }
     
@@ -87,14 +88,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         await client.del(testKey);
         
         return res.status(200).json({
-          REDIS_URL_EXISTS: !!process.env.REDIS_URL,
-          REDIS_URL_PREFIX: process.env.REDIS_URL?.substring(0, 30) || 'NOT SET',
+          KV_REST_API_URL_EXISTS: !!process.env.KV_REST_API_URL,
           REDIS_TEST: 'passed',
           TEST_VALUE: testVal
         });
       } catch (err) {
         return res.status(200).json({
-          REDIS_URL_EXISTS: !!process.env.REDIS_URL,
+          KV_REST_API_URL_EXISTS: !!process.env.KV_REST_API_URL,
           REDIS_TEST: 'failed',
           ERROR: (err as Error).message
         });

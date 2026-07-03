@@ -1,53 +1,19 @@
 {
   "suggestions": {
-    "gama-001": {
-      "votes": 2,
-      "voters": [
-        "User A",
-        "Test Voter"
-      ]
-    },
-    "gama-002": {
+    "local-test": {
       "votes": 1,
       "voters": [
-        "Test Voter"
-      ]
-    },
-    "test-redis": {
-      "votes": 1,
-      "voters": [
-        "Local Test"
+        "Local User"
       ]
     }
   },
   "voteHistory": [
     {
-      "id": "1783055997347-0.355327841127105",
-      "voterName": "User A",
-      "brandId": "gama-001",
-      "brandName": "GAMA Care",
-      "timestamp": "2026-07-03T05:19:57.347Z"
-    },
-    {
-      "id": "1783057182050-0.6526367470274015",
-      "voterName": "Test Voter",
-      "brandId": "gama-002",
-      "brandName": "GAMA Vision",
-      "timestamp": "2026-07-03T05:39:42.050Z"
-    },
-    {
-      "id": "1783057273767-0.09282618665749709",
-      "voterName": "Test Voter",
-      "brandId": "gama-001",
-      "brandName": "GAMA Care",
-      "timestamp": "2026-07-03T05:41:13.767Z"
-    },
-    {
-      "id": "1783057478785-0.03659508317731386",
-      "voterName": "Local Test",
-      "brandId": "test-redis",
-      "brandName": "Test",
-      "timestamp": "2026-07-03T05:44:38.785Z"
+      "id": "1783058450745-0.7728882856921587",
+      "voterName": "Local User",
+      "brandId": "local-test",
+      "brandName": "Local",
+      "timestamp": "2026-07-03T06:00:50.745Z"
     }
   ]
 }

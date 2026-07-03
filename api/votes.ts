@@ -1,73 +1,75 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { put, get } from '@vercel/blob';
+import { createClient } from '@redis/client';
 
 interface VoteData {
   suggestions: { [key: string]: { votes: number; voters: string[] } };
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
 }
 
-const VOTES_BLOB_PATH = 'gama-votes/votes-data.json';
+const REDIS_URL_KEY = 'gama:votes:url';
+
+let redisClient: ReturnType<typeof createClient> | null = null;
+
+function getRedisClient() {
+  if (!redisClient && process.env.REDIS_URL) {
+    redisClient = createClient({
+      url: process.env.REDIS_URL,
+      socket: {
+        reconnectStrategy: (retries) => Math.min(retries * 50, 500)
+      }
+    });
+    
+    redisClient.on('error', (err) => console.log('[v0] Redis error:', err));
+  }
+  return redisClient;
+}
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    let blob;
-    try {
-      blob = await get(VOTES_BLOB_PATH);
-    } catch (getError) {
-      // get() throws BlobNotFoundError when blob doesn't exist
-      console.log('[v0] Blob not found, returning empty:', (getError as any).message);
+    const client = getRedisClient();
+    if (!client) {
+      console.log('[v0] No Redis client, returning empty');
       return { suggestions: {}, voteHistory: [] };
     }
     
-    if (!blob) {
-      console.log('[v0] No votes blob found, returning empty');
+    if (!client.isOpen) {
+      await client.connect();
+    }
+    
+    const votesJson = await client.get(REDIS_URL_KEY);
+    console.log('[v0] Redis read - votesJson exists:', !!votesJson);
+    
+    if (!votesJson) {
       return { suggestions: {}, voteHistory: [] };
     }
     
-    // blob is a Web Blob, convert to string
-    let text: string;
-    if (typeof blob === 'string') {
-      text = blob;
-    } else if (blob instanceof Blob) {
-      text = await blob.text();
-    } else {
-      text = String(blob);
-    }
-    
-    console.log('[v0] Read blob text length:', text.length, 'first 100 chars:', text.substring(0, 100));
-    const data = JSON.parse(text) as VoteData;
-    console.log('[v0] Loaded votes from blob:', Object.keys(data.suggestions).length, 'items');
+    const data = JSON.parse(votesJson) as VoteData;
     return data;
   } catch (error) {
-    console.error('[v0] Error reading votes blob:', {
-      message: (error as Error).message,
-      stack: (error as Error).stack
-    });
-    throw error;
+    console.error('[v0] Error reading from Redis:', error);
+    return { suggestions: {}, voteHistory: [] };
   }
 }
 
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
+    const client = getRedisClient();
+    if (!client) {
+      console.log('[v0] No Redis client, skipping save');
+      return;
+    }
+    
+    if (!client.isOpen) {
+      await client.connect();
+    }
+    
     const jsonStr = JSON.stringify(data);
-    console.log('[v0] Saving votes to blob:', Object.keys(data.suggestions).length, 'items', 'path:', VOTES_BLOB_PATH);
+    console.log('[v0] Saving to Redis:', Object.keys(data.suggestions).length, 'items');
     
-    console.log('[v0] About to save to blob path:', VOTES_BLOB_PATH, 'size:', jsonStr.length);
-    const result = await put(VOTES_BLOB_PATH, jsonStr, {
-      contentType: 'application/json',
-      access: 'private',
-      allowOverwrite: true
-    });
-    
-    console.log('[v0] Successfully saved votes to blob, result:', {
-      url: result.url,
-      pathname: result.pathname,
-      contentType: result.contentType,
-      contentLength: result.contentLength
-    });
+    await client.set(REDIS_URL_KEY, jsonStr);
+    console.log('[v0] Successfully saved to Redis');
   } catch (error) {
-    const err = error as any;
-    console.error('[v0] Error saving votes blob:', err.message, 'code:', err.code, 'full:', JSON.stringify(error));
+    console.error('[v0] Error saving to Redis:', error);
     throw error;
   }
 }
@@ -83,20 +85,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // Test endpoint
-    if (req.query.test === 'save-and-read') {
-      const testData: VoteData = {
-        suggestions: { 'test-123': { votes: 5, voters: ['a', 'b', 'c'] } },
-        voteHistory: []
-      };
-      await saveVotesData(testData);
-      console.log('[v0] Saved test data');
-      
-      const retrieved = await getVotesData();
-      console.log('[v0] Retrieved test data:', retrieved);
-      return res.status(200).json({ saved: testData, retrieved });
-    }
-    
     const data = await getVotesData();
     return res.status(200).json(data);
   }

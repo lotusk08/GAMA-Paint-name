@@ -57,12 +57,23 @@ async function saveVotesData(data: VoteData): Promise<void> {
     const votesStr = JSON.stringify(data.suggestions);
     const historyStr = JSON.stringify(data.voteHistory);
     
-    console.log('[v0] Saving to Redis - suggestions count:', Object.keys(data.suggestions).length);
+    console.log('[v0] About to save:', {
+      key: VOTES_KEY,
+      dataLength: votesStr.length,
+      suggestions: Object.keys(data.suggestions)
+    });
     
-    await client.set(VOTES_KEY, votesStr);
-    await client.set(VOTE_HISTORY_KEY, historyStr);
+    const setResult1 = await client.set(VOTES_KEY, votesStr);
+    console.log('[v0] Set votes result:', setResult1);
     
-    console.log('[v0] Successfully saved to Redis');
+    const setResult2 = await client.set(VOTE_HISTORY_KEY, historyStr);
+    console.log('[v0] Set history result:', setResult2);
+    
+    // Verify immediately
+    const verify1 = await client.get(VOTES_KEY);
+    const verify2 = await client.get(VOTE_HISTORY_KEY);
+    console.log('[v0] Verification - votes exists:', !!verify1, 'history exists:', !!verify2);
+    console.log('[v0] Retrieved votes from verification:', verify1?.substring(0, 100));
   } catch (error) {
     console.error('[v0] Error writing to Redis:', error);
   }

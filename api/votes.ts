@@ -28,6 +28,8 @@ async function getVotesData(): Promise<VoteData> {
     const votesJson = await client.get<string>(VOTES_KEY);
     const historyJson = await client.get<string>(VOTE_HISTORY_KEY);
     
+    console.log('[v0] Redis read - votesJson:', votesJson?.substring(0, 50), 'historyJson:', historyJson?.substring(0, 50));
+    
     const suggestions = votesJson ? JSON.parse(votesJson) : {};
     const voteHistory = historyJson ? JSON.parse(historyJson) : [];
     
@@ -41,8 +43,15 @@ async function getVotesData(): Promise<VoteData> {
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
     const client = getRedisClient();
-    await client.set(VOTES_KEY, JSON.stringify(data.suggestions));
-    await client.set(VOTE_HISTORY_KEY, JSON.stringify(data.voteHistory));
+    const votesStr = JSON.stringify(data.suggestions);
+    const historyStr = JSON.stringify(data.voteHistory);
+    
+    console.log('[v0] Saving to Redis - votes:', votesStr.substring(0, 50), 'history:', historyStr.substring(0, 50));
+    
+    await client.set(VOTES_KEY, votesStr);
+    await client.set(VOTE_HISTORY_KEY, historyStr);
+    
+    console.log('[v0] Successfully saved to Redis');
   } catch (error) {
     console.error('[v0] Error writing to Redis:', error);
   }

@@ -77,6 +77,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Debug check
+    if (req.query.debug === 'true') {
+      return res.status(200).json({
+        REDIS_URL_EXISTS: !!process.env.REDIS_URL,
+        REDIS_URL_PREFIX: process.env.REDIS_URL?.substring(0, 30) || 'NOT SET'
+      });
+    }
+    
     const data = await getVotesData();
     return res.status(200).json(data);
   }

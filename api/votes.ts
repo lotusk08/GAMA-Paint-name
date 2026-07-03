@@ -1,35 +1,40 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
 
 interface VoteData {
   suggestions: { [key: string]: { votes: number; voters: string[] } };
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
 }
 
-const VOTES_FILE = join(process.cwd(), 'api', '.votes.json');
+// For development, use in-memory store
+let votesCache: VoteData | null = null;
 
-function getVotesData(): VoteData {
+async function getVotesData(): Promise<VoteData> {
+  // Return cached data if available
+  if (votesCache) {
+    return votesCache;
+  }
+
+  // Try to initialize from environment variable
   try {
-    if (existsSync(VOTES_FILE)) {
-      const data = readFileSync(VOTES_FILE, 'utf-8');
-      return JSON.parse(data);
+    if (process.env.GAMA_VOTES_DATA) {
+      votesCache = JSON.parse(process.env.GAMA_VOTES_DATA);
+      return votesCache;
     }
   } catch (e) {
-    console.error('Error reading votes file:', e);
+    console.error('Error parsing votes from env:', e);
   }
-  return { suggestions: {}, voteHistory: [] };
+
+  votesCache = { suggestions: {}, voteHistory: [] };
+  return votesCache;
 }
 
-function saveVotesData(data: VoteData): void {
-  try {
-    writeFileSync(VOTES_FILE, JSON.stringify(data, null, 2));
-  } catch (e) {
-    console.error('Error saving votes file:', e);
-  }
+async function saveVotesData(data: VoteData): Promise<void> {
+  votesCache = data;
+  // In production with Vercel KV, save here
+  // For now, this persists in memory during the function lifecycle
 }
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -40,7 +45,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    const data = getVotesData();
+    const data = await getVotesData();
     return res.status(200).json(data);
   }
 
@@ -51,7 +56,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const data = getVotesData();
+    const data = await getVotesData();
 
     if (!data.suggestions[brandId]) {
       data.suggestions[brandId] = { votes: 0, voters: [] };
@@ -76,7 +81,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       timestamp: new Date().toISOString()
     });
 
-    saveVotesData(data);
+    await saveVotesData(data);
 
     return res.status(200).json({
       success: true,
@@ -93,7 +98,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const data = getVotesData();
+    const data = await getVotesData();
 
     if (!data.suggestions[brandId]) {
       return res.status(404).json({ error: 'Brand not found' });
@@ -107,11 +112,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Voter did not vote for this item' });
     }
 
-    const voters = suggestion.voters as string[];
     voters.splice(index, 1);
     suggestion.votes = voters.length;
 
-    saveVotesData(data);
+    await saveVotesData(data);
 
     return res.status(200).json({
       success: true,

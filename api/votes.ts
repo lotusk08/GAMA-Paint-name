@@ -78,6 +78,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
+    // Test endpoint
+    if (req.query.test === 'save-and-read') {
+      const testData: VoteData = {
+        suggestions: { 'test-123': { votes: 5, voters: ['a', 'b', 'c'] } },
+        voteHistory: []
+      };
+      await saveVotesData(testData);
+      console.log('[v0] Saved test data');
+      
+      const retrieved = await getVotesData();
+      console.log('[v0] Retrieved test data:', retrieved);
+      return res.status(200).json({ saved: testData, retrieved });
+    }
+    
     const data = await getVotesData();
     return res.status(200).json(data);
   }

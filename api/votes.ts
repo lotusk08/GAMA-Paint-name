@@ -7,18 +7,26 @@ interface VoteData {
 }
 
 // Initialize Redis client
-const redis = new Redis({
-  url: process.env.REDIS_URL || '',
-  token: process.env.REDIS_TOKEN || ''
-});
+let redis: Redis | null = null;
+
+function getRedisClient(): Redis {
+  if (!redis) {
+    redis = new Redis({
+      url: process.env.KV_REST_API_URL || process.env.REDIS_URL || '',
+      token: process.env.KV_REST_API_TOKEN || ''
+    });
+  }
+  return redis;
+}
 
 const VOTES_KEY = 'gama:votes:data';
 const VOTE_HISTORY_KEY = 'gama:votes:history';
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    const votesJson = await redis.get<string>(VOTES_KEY);
-    const historyJson = await redis.get<string>(VOTE_HISTORY_KEY);
+    const client = getRedisClient();
+    const votesJson = await client.get<string>(VOTES_KEY);
+    const historyJson = await client.get<string>(VOTE_HISTORY_KEY);
     
     const suggestions = votesJson ? JSON.parse(votesJson) : {};
     const voteHistory = historyJson ? JSON.parse(historyJson) : [];
@@ -32,8 +40,9 @@ async function getVotesData(): Promise<VoteData> {
 
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
-    await redis.set(VOTES_KEY, JSON.stringify(data.suggestions));
-    await redis.set(VOTE_HISTORY_KEY, JSON.stringify(data.voteHistory));
+    const client = getRedisClient();
+    await client.set(VOTES_KEY, JSON.stringify(data.suggestions));
+    await client.set(VOTE_HISTORY_KEY, JSON.stringify(data.voteHistory));
   } catch (error) {
     console.error('[v0] Error writing to Redis:', error);
   }

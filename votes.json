@@ -5,6 +5,12 @@
       "voters": [
         "User A"
       ]
+    },
+    "gama-002": {
+      "votes": 1,
+      "voters": [
+        "Test Voter"
+      ]
     }
   },
   "voteHistory": [
@@ -14,6 +20,13 @@
       "brandId": "gama-001",
       "brandName": "GAMA Care",
       "timestamp": "2026-07-03T05:19:57.347Z"
+    },
+    {
+      "id": "1783057182050-0.6526367470274015",
+      "voterName": "Test Voter",
+      "brandId": "gama-002",
+      "brandName": "GAMA Vision",
+      "timestamp": "2026-07-03T05:39:42.050Z"
     }
   ]
 }

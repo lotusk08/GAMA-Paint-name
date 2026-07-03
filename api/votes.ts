@@ -99,15 +99,17 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Brand not found' });
     }
 
-    const suggestion = data.suggestions[brandId];
-    const index = suggestion.voters.indexOf(voterName);
+    const suggestion = data.suggestions[brandId as string];
+    const voters = suggestion.voters as string[];
+    const index = voters.indexOf(voterName);
 
     if (index === -1) {
       return res.status(400).json({ error: 'Voter did not vote for this item' });
     }
 
-    suggestion.voters.splice(index, 1);
-    suggestion.votes = suggestion.voters.length;
+    const voters = suggestion.voters as string[];
+    voters.splice(index, 1);
+    suggestion.votes = voters.length;
 
     saveVotesData(data);
 

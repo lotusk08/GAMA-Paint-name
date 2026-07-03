@@ -34,13 +34,16 @@ async function getVotesData(): Promise<VoteData> {
       text = String(blob);
     }
     
-    console.log('[v0] Read blob text:', text.substring(0, 100));
+    console.log('[v0] Read blob text length:', text.length, 'first 100 chars:', text.substring(0, 100));
     const data = JSON.parse(text) as VoteData;
     console.log('[v0] Loaded votes from blob:', Object.keys(data.suggestions).length, 'items');
     return data;
   } catch (error) {
-    console.error('[v0] Error reading votes blob:', error);
-    return { suggestions: {}, voteHistory: [] };
+    console.error('[v0] Error reading votes blob:', {
+      message: (error as Error).message,
+      stack: (error as Error).stack
+    });
+    throw error;
   }
 }
 

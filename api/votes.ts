@@ -1,37 +1,42 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { Redis } from '@upstash/redis';
 
 interface VoteData {
   suggestions: { [key: string]: { votes: number; voters: string[] } };
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
 }
 
-// For development, use in-memory store
-let votesCache: VoteData | null = null;
+// Initialize Redis client
+const redis = new Redis({
+  url: process.env.REDIS_URL || '',
+  token: process.env.REDIS_TOKEN || ''
+});
+
+const VOTES_KEY = 'gama:votes:data';
+const VOTE_HISTORY_KEY = 'gama:votes:history';
 
 async function getVotesData(): Promise<VoteData> {
-  // Return cached data if available
-  if (votesCache) {
-    return votesCache;
-  }
-
-  // Try to initialize from environment variable
   try {
-    if (process.env.GAMA_VOTES_DATA) {
-      votesCache = JSON.parse(process.env.GAMA_VOTES_DATA);
-      return votesCache;
-    }
-  } catch (e) {
-    console.error('Error parsing votes from env:', e);
+    const votesJson = await redis.get<string>(VOTES_KEY);
+    const historyJson = await redis.get<string>(VOTE_HISTORY_KEY);
+    
+    const suggestions = votesJson ? JSON.parse(votesJson) : {};
+    const voteHistory = historyJson ? JSON.parse(historyJson) : [];
+    
+    return { suggestions, voteHistory };
+  } catch (error) {
+    console.error('[v0] Error reading from Redis:', error);
+    return { suggestions: {}, voteHistory: [] };
   }
-
-  votesCache = { suggestions: {}, voteHistory: [] };
-  return votesCache;
 }
 
 async function saveVotesData(data: VoteData): Promise<void> {
-  votesCache = data;
-  // In production with Vercel KV, save here
-  // For now, this persists in memory during the function lifecycle
+  try {
+    await redis.set(VOTES_KEY, JSON.stringify(data.suggestions));
+    await redis.set(VOTE_HISTORY_KEY, JSON.stringify(data.voteHistory));
+  } catch (error) {
+    console.error('[v0] Error writing to Redis:', error);
+  }
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

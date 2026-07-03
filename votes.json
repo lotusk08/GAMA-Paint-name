@@ -1,9 +1,10 @@
 {
   "suggestions": {
     "gama-001": {
-      "votes": 1,
+      "votes": 2,
       "voters": [
-        "User A"
+        "User A",
+        "Test Voter"
       ]
     },
     "gama-002": {
@@ -27,6 +28,13 @@
       "brandId": "gama-002",
       "brandName": "GAMA Vision",
       "timestamp": "2026-07-03T05:39:42.050Z"
+    },
+    {
+      "id": "1783057273767-0.09282618665749709",
+      "voterName": "Test Voter",
+      "brandId": "gama-001",
+      "brandName": "GAMA Care",
+      "timestamp": "2026-07-03T05:41:13.767Z"
     }
   ]
 }

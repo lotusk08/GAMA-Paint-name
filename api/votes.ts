@@ -1,22 +1,9 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Redis } from '@upstash/redis';
+import { kv } from '@vercel/kv';
 
 interface VoteData {
   suggestions: { [key: string]: { votes: number; voters: string[] } };
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
-}
-
-// Initialize Redis client
-let redis: Redis | null = null;
-
-function getRedisClient(): Redis {
-  if (!redis) {
-    redis = new Redis({
-      url: process.env.KV_REST_API_URL || process.env.REDIS_URL || '',
-      token: process.env.KV_REST_API_TOKEN || ''
-    });
-  }
-  return redis;
 }
 
 const VOTES_KEY = 'gama:votes:data';
@@ -24,36 +11,34 @@ const VOTE_HISTORY_KEY = 'gama:votes:history';
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    const client = getRedisClient();
-    const votesJson = await client.get<string>(VOTES_KEY);
-    const historyJson = await client.get<string>(VOTE_HISTORY_KEY);
+    const votesJson = await kv.get<string>(VOTES_KEY);
+    const historyJson = await kv.get<string>(VOTE_HISTORY_KEY);
     
-    console.log('[v0] Redis read - votesJson:', votesJson?.substring(0, 50), 'historyJson:', historyJson?.substring(0, 50));
+    console.log('[v0] KV read - votesJson exists:', !!votesJson, 'historyJson exists:', !!historyJson);
     
-    const suggestions = votesJson ? JSON.parse(votesJson) : {};
-    const voteHistory = historyJson ? JSON.parse(historyJson) : [];
+    const suggestions = votesJson ? JSON.parse(votesJson as string) : {};
+    const voteHistory = historyJson ? JSON.parse(historyJson as string) : [];
     
     return { suggestions, voteHistory };
   } catch (error) {
-    console.error('[v0] Error reading from Redis:', error);
+    console.error('[v0] Error reading from KV:', error);
     return { suggestions: {}, voteHistory: [] };
   }
 }
 
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
-    const client = getRedisClient();
     const votesStr = JSON.stringify(data.suggestions);
     const historyStr = JSON.stringify(data.voteHistory);
     
-    console.log('[v0] Saving to Redis - votes:', votesStr.substring(0, 50), 'history:', historyStr.substring(0, 50));
+    console.log('[v0] Saving to KV - suggestions count:', Object.keys(data.suggestions).length);
     
-    await client.set(VOTES_KEY, votesStr);
-    await client.set(VOTE_HISTORY_KEY, historyStr);
+    await kv.set(VOTES_KEY, votesStr);
+    await kv.set(VOTE_HISTORY_KEY, historyStr);
     
-    console.log('[v0] Successfully saved to Redis');
+    console.log('[v0] Successfully saved to KV');
   } catch (error) {
-    console.error('[v0] Error writing to Redis:', error);
+    console.error('[v0] Error writing to KV:', error);
   }
 }
 

@@ -12,6 +12,12 @@
       "voters": [
         "Test Voter"
       ]
+    },
+    "test-redis": {
+      "votes": 1,
+      "voters": [
+        "Local Test"
+      ]
     }
   },
   "voteHistory": [
@@ -35,6 +41,13 @@
       "brandId": "gama-001",
       "brandName": "GAMA Care",
       "timestamp": "2026-07-03T05:41:13.767Z"
+    },
+    {
+      "id": "1783057478785-0.03659508317731386",
+      "voterName": "Local Test",
+      "brandId": "test-redis",
+      "brandName": "Test",
+      "timestamp": "2026-07-03T05:44:38.785Z"
     }
   ]
 }

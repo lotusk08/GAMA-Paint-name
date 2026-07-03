@@ -1,81 +1,43 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { Redis } from '@upstash/redis';
+import { put, get } from '@vercel/blob';
 
 interface VoteData {
   suggestions: { [key: string]: { votes: number; voters: string[] } };
   voteHistory: { id: string; voterName: string; brandId: string; brandName: string; timestamp: string }[];
 }
 
-// Lazy initialize Redis client using REST API
-let redis: Redis | null = null;
-
-function getRedisClient(): Redis {
-  if (!redis) {
-    redis = new Redis({
-      url: process.env.KV_REST_API_URL || '',
-      token: process.env.KV_REST_API_TOKEN || ''
-    });
-  }
-  return redis;
-}
-
-const VOTES_KEY = 'gama:votes:data';
-const VOTE_HISTORY_KEY = 'gama:votes:history';
+const VOTES_BLOB_PATH = 'gama-votes/votes-data.json';
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    if (!process.env.KV_REST_API_URL) {
-      console.log('[v0] No KV_REST_API_URL set, returning empty data');
+    const blob = await get(VOTES_BLOB_PATH);
+    if (!blob) {
+      console.log('[v0] No votes blob found, returning empty');
       return { suggestions: {}, voteHistory: [] };
     }
     
-    const client = getRedisClient();
-    console.log('[v0] Reading from Redis keys:', VOTES_KEY, VOTE_HISTORY_KEY);
-    const votesJson = await client.get(VOTES_KEY);
-    const historyJson = await client.get(VOTE_HISTORY_KEY);
-    
-    console.log('[v0] Redis read - votesJson:', votesJson, 'historyJson:', historyJson);
-    
-    const suggestions = votesJson ? JSON.parse(votesJson as string) : {};
-    const voteHistory = historyJson ? JSON.parse(historyJson as string) : [];
-    
-    return { suggestions, voteHistory };
+    const data = JSON.parse(blob.toString()) as VoteData;
+    console.log('[v0] Loaded votes from blob:', Object.keys(data.suggestions).length, 'items');
+    return data;
   } catch (error) {
-    console.error('[v0] Error reading from Redis:', error);
+    console.error('[v0] Error reading votes blob:', error);
     return { suggestions: {}, voteHistory: [] };
   }
 }
 
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
-    if (!process.env.KV_REST_API_URL) {
-      console.log('[v0] No KV_REST_API_URL set, skipping save');
-      return;
-    }
+    const jsonStr = JSON.stringify(data);
+    console.log('[v0] Saving votes to blob:', Object.keys(data.suggestions).length, 'items');
     
-    const client = getRedisClient();
-    const votesStr = JSON.stringify(data.suggestions);
-    const historyStr = JSON.stringify(data.voteHistory);
-    
-    console.log('[v0] About to save:', {
-      key: VOTES_KEY,
-      dataLength: votesStr.length,
-      suggestions: Object.keys(data.suggestions)
+    await put(VOTES_BLOB_PATH, jsonStr, {
+      contentType: 'application/json',
+      access: 'private'
     });
     
-    const setResult1 = await client.set(VOTES_KEY, votesStr);
-    console.log('[v0] Set votes result:', setResult1);
-    
-    const setResult2 = await client.set(VOTE_HISTORY_KEY, historyStr);
-    console.log('[v0] Set history result:', setResult2);
-    
-    // Verify immediately
-    const verify1 = await client.get(VOTES_KEY);
-    const verify2 = await client.get(VOTE_HISTORY_KEY);
-    console.log('[v0] Verification - votes exists:', !!verify1, 'history exists:', !!verify2);
-    console.log('[v0] Retrieved votes from verification:', verify1?.substring(0, 100));
+    console.log('[v0] Successfully saved votes to blob');
   } catch (error) {
-    console.error('[v0] Error writing to Redis:', error);
+    console.error('[v0] Error saving votes blob:', error);
   }
 }
 
@@ -90,29 +52,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // Debug check
-    if (req.query.debug === 'true') {
-      try {
-        const client = getRedisClient();
-        const testKey = 'test:key:' + Date.now();
-        await client.set(testKey, 'test value');
-        const testVal = await client.get(testKey);
-        await client.del(testKey);
-        
-        return res.status(200).json({
-          KV_REST_API_URL_EXISTS: !!process.env.KV_REST_API_URL,
-          REDIS_TEST: 'passed',
-          TEST_VALUE: testVal
-        });
-      } catch (err) {
-        return res.status(200).json({
-          KV_REST_API_URL_EXISTS: !!process.env.KV_REST_API_URL,
-          REDIS_TEST: 'failed',
-          ERROR: (err as Error).message
-        });
-      }
-    }
-    
     const data = await getVotesData();
     return res.status(200).json(data);
   }

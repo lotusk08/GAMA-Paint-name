@@ -43,7 +43,7 @@ async function saveVotesData(data: VoteData): Promise<void> {
     const result = await put(VOTES_BLOB_PATH, jsonStr, {
       contentType: 'application/json',
       access: 'private',
-      overwrite: true
+      allowOverwrite: true
     });
     
     console.log('[v0] Successfully saved votes to blob, url:', result.url);

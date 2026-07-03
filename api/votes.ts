@@ -100,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const data = await getVotesData();
 
-    if (!data.suggestions[brandId]) {
+    if (!data.suggestions[brandId as string]) {
       return res.status(404).json({ error: 'Brand not found' });
     }
 

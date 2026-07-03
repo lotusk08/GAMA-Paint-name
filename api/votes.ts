@@ -59,7 +59,12 @@ async function saveVotesData(data: VoteData): Promise<void> {
       allowOverwrite: true
     });
     
-    console.log('[v0] Successfully saved votes to blob, url:', result.url, 'pathname:', result.pathname);
+    console.log('[v0] Successfully saved votes to blob, result:', {
+      url: result.url,
+      pathname: result.pathname,
+      contentType: result.contentType,
+      contentLength: result.contentLength
+    });
   } catch (error) {
     const err = error as any;
     console.error('[v0] Error saving votes blob:', err.message, 'code:', err.code, 'full:', JSON.stringify(error));

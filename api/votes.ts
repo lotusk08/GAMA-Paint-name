@@ -30,10 +30,11 @@ async function getVotesData(): Promise<VoteData> {
     }
     
     const client = getRedisClient();
+    console.log('[v0] Reading from Redis keys:', VOTES_KEY, VOTE_HISTORY_KEY);
     const votesJson = await client.get(VOTES_KEY);
     const historyJson = await client.get(VOTE_HISTORY_KEY);
     
-    console.log('[v0] Redis read - votesJson type:', typeof votesJson, 'historyJson type:', typeof historyJson);
+    console.log('[v0] Redis read - votesJson:', votesJson, 'historyJson:', historyJson);
     
     const suggestions = votesJson ? JSON.parse(votesJson as string) : {};
     const voteHistory = historyJson ? JSON.parse(historyJson as string) : [];

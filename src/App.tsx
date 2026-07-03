@@ -39,10 +39,16 @@ import { motion, AnimatePresence } from 'motion/react';
 import { suggestionsData, paintCategories, paintTiers, Suggestion } from './data';
 
 const API_BASE_URL = (() => {
-  if (typeof window === 'undefined') return 'http://localhost:3001';
-  const url = new URL(window.location.origin);
-  url.port = '3001';
-  return url.toString().replace(/\/$/, '');
+  if (typeof window === 'undefined') return '';
+  // In development with local backend, use localhost:3001
+  // In production (Vercel), use /api (serverless functions)
+  const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (isDev) {
+    const url = new URL(window.location.origin);
+    url.port = '3001';
+    return url.toString().replace(/\/$/, '');
+  }
+  return '';
 })();
 
 // Extend Suggestion with votes for state management
@@ -102,7 +108,8 @@ export default function App() {
   useEffect(() => {
     const loadVotesFromServer = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/votes`);
+        const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/votes` : `/api/votes`;
+        const response = await fetch(apiUrl);
         if (response.ok) {
           const data = await response.json();
           
@@ -261,7 +268,8 @@ export default function App() {
     if (alreadyVoted) {
       // Cancel vote - send to server
       try {
-        const response = await fetch(`${API_BASE_URL}/api/votes/${id}`, {
+        const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/votes/${id}` : `/api/votes?brandId=${id}`;
+        const response = await fetch(apiUrl, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ voterName: voterName })
@@ -295,7 +303,8 @@ export default function App() {
     } else {
       // Cast vote - send to server
       try {
-        const response = await fetch(`${API_BASE_URL}/api/votes`, {
+        const apiUrl = API_BASE_URL ? `${API_BASE_URL}/api/votes` : `/api/votes`;
+        const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

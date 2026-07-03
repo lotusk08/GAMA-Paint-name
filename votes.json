@@ -1,0 +1,19 @@
+{
+  "suggestions": {
+    "gama-001": {
+      "votes": 1,
+      "voters": [
+        "User A"
+      ]
+    }
+  },
+  "voteHistory": [
+    {
+      "id": "1783055997347-0.355327841127105",
+      "voterName": "User A",
+      "brandId": "gama-001",
+      "brandName": "GAMA Care",
+      "timestamp": "2026-07-03T05:19:57.347Z"
+    }
+  ]
+}

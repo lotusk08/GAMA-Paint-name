@@ -38,6 +38,13 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { suggestionsData, paintCategories, paintTiers, Suggestion } from './data';
 
+const API_BASE_URL = (() => {
+  if (typeof window === 'undefined') return 'http://localhost:3001';
+  const url = new URL(window.location.origin);
+  url.port = '3001';
+  return url.toString().replace(/\/$/, '');
+})();
+
 // Extend Suggestion with votes for state management
 interface VotedSuggestion extends Suggestion {
   votes: number;
@@ -52,10 +59,10 @@ interface VoteHistory {
 }
 
 export default function App() {
-  // Initialize state with default votes if not already in localStorage
+  const [isLoadingVotes, setIsLoadingVotes] = useState(true);
+  
+  // Initialize state with default votes
   const [suggestions, setSuggestions] = useState<VotedSuggestion[]>(() => {
-    const saved = localStorage.getItem('gama_suggestions_voted_v5');
-    
     // Helper to clean up any duplicates and respect category-tier constraints
     const cleanList = (list: any[]): VotedSuggestion[] => {
       const result: VotedSuggestion[] = [];
@@ -83,17 +90,6 @@ export default function App() {
       
       return result;
     };
-
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
-          return cleanList(parsed);
-        }
-      } catch (e) {
-        console.error('Lỗi phân tích localStorage:', e);
-      }
-    }
     
     // Initialize everything with exactly 0 votes and run through cleanup
     return cleanList(suggestionsData.map((item) => ({
@@ -101,6 +97,62 @@ export default function App() {
       votes: 0
     })));
   });
+
+  // Load votes from server on mount
+  useEffect(() => {
+    const loadVotesFromServer = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/votes`);
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Update suggestions with server votes
+          setSuggestions(prev => 
+            prev.map(item => ({
+              ...item,
+              votes: data.suggestions[item.id]?.votes || 0
+            }))
+          );
+          
+          // Load my voted IDs from localStorage (local user preference)
+          const savedMyVotedIds = localStorage.getItem('gama_my_voted_ids_v5');
+          if (savedMyVotedIds) {
+            try {
+              setMyVotedIds(JSON.parse(savedMyVotedIds));
+            } catch (e) {
+              console.error('Error parsing myVotedIds:', e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('[v0] Error loading votes from server:', e);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('gama_suggestions_voted_v5');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (parsed && Array.isArray(parsed)) {
+              setSuggestions(prev =>
+                prev.map(item => {
+                  const savedItem = parsed.find((s: any) => s.id === item.id);
+                  return {
+                    ...item,
+                    votes: savedItem?.votes || 0
+                  };
+                })
+              );
+            }
+          } catch (e2) {
+            console.error('Error parsing localStorage:', e2);
+          }
+        }
+      } finally {
+        setIsLoadingVotes(false);
+      }
+    };
+
+    loadVotesFromServer();
+  }, []);
 
   // Keep track of which brand IDs the current session has voted for
   const [myVotedIds, setMyVotedIds] = useState<string[]>(() => {
@@ -193,7 +245,7 @@ export default function App() {
   };
 
   // Handle single voting action
-  const handleVote = (id: string, name: string) => {
+  const handleVote = async (id: string, name: string) => {
     // Check if voter identity is provided, otherwise prompt
     if (!voterName.trim()) {
       showToast('Vui lòng nhập Tên/Phòng ban của bạn ở góc trái trước khi bình chọn!');
@@ -207,35 +259,86 @@ export default function App() {
     const alreadyVoted = myVotedIds.includes(id);
 
     if (alreadyVoted) {
-      // Cancel vote
-      setSuggestions(prev => prev.map(item => {
-        if (item.id === id) {
-          return { ...item, votes: Math.max(0, item.votes - 1) };
+      // Cancel vote - send to server
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/votes/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ voterName: voterName })
+        });
+        
+        if (response.ok) {
+          setSuggestions(prev => prev.map(item => {
+            if (item.id === id) {
+              return { ...item, votes: Math.max(0, item.votes - 1) };
+            }
+            return item;
+          }));
+          setMyVotedIds(prev => prev.filter(vId => vId !== id));
+          setVoteHistory(prev => prev.filter(h => !(h.brandId === id && h.voterName === voterName)));
+          showToast(`Đã rút phiếu bầu chọn cho: ${name}`);
+        } else {
+          showToast('Lỗi khi rút phiếu. Vui lòng thử lại.');
         }
-        return item;
-      }));
-      setMyVotedIds(prev => prev.filter(vId => vId !== id));
-      setVoteHistory(prev => prev.filter(h => !(h.brandId === id && h.voterName === voterName)));
-      showToast(`Đã rút phiếu bầu chọn cho: ${name}`);
+      } catch (e) {
+        console.error('[v0] Error unvoting:', e);
+        // Fallback to local update
+        setSuggestions(prev => prev.map(item => {
+          if (item.id === id) {
+            return { ...item, votes: Math.max(0, item.votes - 1) };
+          }
+          return item;
+        }));
+        setMyVotedIds(prev => prev.filter(vId => vId !== id));
+        showToast(`Đã rút phiếu bầu chọn cho: ${name}`);
+      }
     } else {
-      // Cast vote
-      setSuggestions(prev => prev.map(item => {
-        if (item.id === id) {
-          return { ...item, votes: item.votes + 1 };
+      // Cast vote - send to server
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/votes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            brandId: id,
+            brandName: name,
+            voterName: voterName
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setSuggestions(prev => prev.map(item => {
+            if (item.id === id) {
+              return { ...item, votes: result.votes };
+            }
+            return item;
+          }));
+          setMyVotedIds(prev => [...prev, id]);
+          
+          const newHistoryEntry: VoteHistory = {
+            id: `vote_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+            voterName: voterName,
+            brandId: id,
+            brandName: name,
+            timestamp: 'Vừa xong'
+          };
+          setVoteHistory(prev => [newHistoryEntry, ...prev].slice(0, 20));
+          showToast(`🎉 Đã ghi nhận phiếu bầu của bạn cho: ${name}!`);
+        } else {
+          showToast('Lỗi khi ghi nhận phiếu. Vui lòng thử lại.');
         }
-        return item;
-      }));
-      setMyVotedIds(prev => [...prev, id]);
-      
-      const newHistoryEntry: VoteHistory = {
-        id: `vote_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        voterName: voterName,
-        brandId: id,
-        brandName: name,
-        timestamp: 'Vừa xong'
-      };
-      setVoteHistory(prev => [newHistoryEntry, ...prev].slice(0, 20)); // Limit to last 20 entries
-      showToast(`🎉 Đã ghi nhận phiếu bầu của bạn cho: ${name}!`);
+      } catch (e) {
+        console.error('[v0] Error voting:', e);
+        // Fallback to local update
+        setSuggestions(prev => prev.map(item => {
+          if (item.id === id) {
+            return { ...item, votes: item.votes + 1 };
+          }
+          return item;
+        }));
+        setMyVotedIds(prev => [...prev, id]);
+        showToast(`🎉 Đã ghi nhận phiếu bầu của bạn cho: ${name}!`);
+      }
     }
   };
 

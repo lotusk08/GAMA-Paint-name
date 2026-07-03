@@ -79,10 +79,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
     // Debug check
     if (req.query.debug === 'true') {
-      return res.status(200).json({
-        REDIS_URL_EXISTS: !!process.env.REDIS_URL,
-        REDIS_URL_PREFIX: process.env.REDIS_URL?.substring(0, 30) || 'NOT SET'
-      });
+      try {
+        const client = getRedisClient();
+        const testKey = 'test:key:' + Date.now();
+        await client.set(testKey, 'test value');
+        const testVal = await client.get(testKey);
+        await client.del(testKey);
+        
+        return res.status(200).json({
+          REDIS_URL_EXISTS: !!process.env.REDIS_URL,
+          REDIS_URL_PREFIX: process.env.REDIS_URL?.substring(0, 30) || 'NOT SET',
+          REDIS_TEST: 'passed',
+          TEST_VALUE: testVal
+        });
+      } catch (err) {
+        return res.status(200).json({
+          REDIS_URL_EXISTS: !!process.env.REDIS_URL,
+          REDIS_TEST: 'failed',
+          ERROR: (err as Error).message
+        });
+      }
     }
     
     const data = await getVotesData();

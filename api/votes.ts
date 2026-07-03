@@ -52,13 +52,14 @@ async function saveVotesData(data: VoteData): Promise<void> {
     const jsonStr = JSON.stringify(data);
     console.log('[v0] Saving votes to blob:', Object.keys(data.suggestions).length, 'items', 'path:', VOTES_BLOB_PATH);
     
+    console.log('[v0] About to save to blob path:', VOTES_BLOB_PATH, 'size:', jsonStr.length);
     const result = await put(VOTES_BLOB_PATH, jsonStr, {
       contentType: 'application/json',
       access: 'private',
       allowOverwrite: true
     });
     
-    console.log('[v0] Successfully saved votes to blob, url:', result.url);
+    console.log('[v0] Successfully saved votes to blob, url:', result.url, 'pathname:', result.pathname);
   } catch (error) {
     const err = error as any;
     console.error('[v0] Error saving votes blob:', err.message, 'code:', err.code, 'full:', JSON.stringify(error));

@@ -10,7 +10,15 @@ const VOTES_BLOB_PATH = 'gama-votes/votes-data.json';
 
 async function getVotesData(): Promise<VoteData> {
   try {
-    const blob = await get(VOTES_BLOB_PATH);
+    let blob;
+    try {
+      blob = await get(VOTES_BLOB_PATH);
+    } catch (getError) {
+      // get() throws BlobNotFoundError when blob doesn't exist
+      console.log('[v0] Blob not found, returning empty:', (getError as any).message);
+      return { suggestions: {}, voteHistory: [] };
+    }
+    
     if (!blob) {
       console.log('[v0] No votes blob found, returning empty');
       return { suggestions: {}, voteHistory: [] };

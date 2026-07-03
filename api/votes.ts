@@ -28,16 +28,18 @@ async function getVotesData(): Promise<VoteData> {
 async function saveVotesData(data: VoteData): Promise<void> {
   try {
     const jsonStr = JSON.stringify(data);
-    console.log('[v0] Saving votes to blob:', Object.keys(data.suggestions).length, 'items');
+    console.log('[v0] Saving votes to blob:', Object.keys(data.suggestions).length, 'items', 'path:', VOTES_BLOB_PATH);
     
-    await put(VOTES_BLOB_PATH, jsonStr, {
+    const result = await put(VOTES_BLOB_PATH, jsonStr, {
       contentType: 'application/json',
       access: 'private'
     });
     
-    console.log('[v0] Successfully saved votes to blob');
+    console.log('[v0] Successfully saved votes to blob, url:', result.url);
   } catch (error) {
-    console.error('[v0] Error saving votes blob:', error);
+    const err = error as any;
+    console.error('[v0] Error saving votes blob:', err.message, 'code:', err.code, 'full:', JSON.stringify(error));
+    throw error;
   }
 }
 
@@ -88,7 +90,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       timestamp: new Date().toISOString()
     });
 
-    await saveVotesData(data);
+    try {
+      await saveVotesData(data);
+    } catch (saveError) {
+      console.error('[v0] Failed to save after vote:', saveError);
+      return res.status(500).json({ error: 'Failed to save vote', details: (saveError as Error).message });
+    }
 
     return res.status(200).json({
       success: true,

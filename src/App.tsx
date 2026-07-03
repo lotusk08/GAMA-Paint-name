@@ -779,88 +779,7 @@ export default function App() {
         {/* RIGHT COLUMN: CONTROL PANEL, FILTERS & MAIN LIST VIEW */}
         <div className="flex-1 flex flex-col gap-6">
           
-          {/* SEARCH, SORT AND DISPLAY MODES BAR */}
-          <div className="bg-white p-4 rounded-2xl border border-emerald-100/60 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-            
-            {/* Search Input */}
-            <div className="relative w-full md:max-w-xs">
-              <Search className="absolute left-3.5 top-2.5 text-slate-400" size={16} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm theo Tên sơn, Lý do đề xuất..."
-                className="w-full pl-9 pr-4 py-1.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent placeholder-slate-400"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2.5 text-[9px] text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 px-1 py-0.5 rounded"
-                >
-                  Xóa
-                </button>
-              )}
-            </div>
-
-            {/* Sort Control */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">Sắp xếp:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600"
-              >
-                <option value="votes-desc">🔥 Số phiếu bầu nhiều nhất</option>
-                <option value="votes-asc">👍 Số phiếu bầu ít nhất</option>
-                <option value="alphabetical">🔤 Tên đề xuất A-Z</option>
-                <option value="default">📂 Theo phân loại danh mục</option>
-              </select>
-            </div>
-
-            {/* View Modes (Polished Segmented Control) */}
-            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-              <div className="bg-slate-100/80 p-1 rounded-xl flex items-center border border-slate-200/60 w-full sm:w-auto shadow-inner">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  title="Xem dạng lưới thẻ"
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === 'grid' 
-                      ? 'bg-[#0C3E26] text-white shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
-                  }`}
-                >
-                  <Grid size={13} />
-                  <span>Dạng lưới</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  title="Xem dạng bảng"
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === 'list' 
-                      ? 'bg-[#0C3E26] text-white shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
-                  }`}
-                >
-                  <List size={13} />
-                  <span>Dạng bảng</span>
-                </button>
-                <button
-                  onClick={() => setViewMode('text')}
-                  title="Xem định dạng văn bản (Tên - Lý do)"
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                    viewMode === 'text' 
-                      ? 'bg-[#0C3E26] text-white shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
-                  }`}
-                >
-                  <FileText size={13} />
-                  <span>Dạng văn bản</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* FILTERS TABS */}
+          {/* FILTERS, SEARCH AND DISPLAY MODES */}
           <div className="bg-white p-5 rounded-2xl border border-emerald-100/60 shadow-sm flex flex-col gap-4">
             
             {/* Category selection */}
@@ -909,6 +828,89 @@ export default function App() {
                     {tier.name}
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="h-[1px] bg-slate-100"></div>
+
+            {/* SEARCH, SORT AND DISPLAY MODES BAR (Supplementary) */}
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-slate-50/50 -mx-1 p-2 rounded-xl border border-slate-100/50">
+              
+              {/* Search Input */}
+              <div className="relative w-full md:max-w-xs">
+                <Search className="absolute left-3.5 top-2.5 text-slate-400" size={16} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm kiếm theo Tên sơn, Lý do đề xuất..."
+                  className="w-full pl-9 pr-4 py-1.5 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent placeholder-slate-400 shadow-sm"
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-2.5 text-[9px] text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 px-1 py-0.5 rounded"
+                  >
+                    Xóa
+                  </button>
+                )}
+              </div>
+
+              {/* Sort Control */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider whitespace-nowrap">Sắp xếp:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="bg-white shadow-sm border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                >
+                  <option value="votes-desc">🔥 Số phiếu bầu nhiều nhất</option>
+                  <option value="votes-asc">👍 Số phiếu bầu ít nhất</option>
+                  <option value="alphabetical">🔤 Tên đề xuất A-Z</option>
+                  <option value="default">📂 Theo phân loại danh mục</option>
+                </select>
+              </div>
+
+              {/* View Modes (Polished Segmented Control) */}
+              <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                <div className="bg-slate-200/50 p-1 rounded-xl flex items-center border border-slate-200/60 w-full sm:w-auto shadow-inner">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    title="Xem dạng lưới thẻ"
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      viewMode === 'grid' 
+                        ? 'bg-[#0C3E26] text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+                    }`}
+                  >
+                    <Grid size={13} />
+                    <span>Dạng lưới</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    title="Xem dạng bảng"
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      viewMode === 'list' 
+                        ? 'bg-[#0C3E26] text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+                    }`}
+                  >
+                    <List size={13} />
+                    <span>Dạng bảng</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('text')}
+                    title="Xem định dạng văn bản (Tên - Lý do)"
+                    className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      viewMode === 'text' 
+                        ? 'bg-[#0C3E26] text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
+                    }`}
+                  >
+                    <FileText size={13} />
+                    <span>Dạng văn bản</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
